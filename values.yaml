@@ -1,0 +1,75 @@
+## Name that will be used for all resources. If updating it, make sure to update "volumes" and "volumeMounts" in this file below.
+nameOverride: nginx
+fullnameOverride: nginx
+
+deployment:
+  replicaCount: 1
+
+  env:
+    ## These are passed to the nginx container and will generate the final nginx config based off of templates/configmap.yaml
+    ### Ensure you review the template in the configmap.yaml.
+    ### This is meant to redirect traffic to another endpoint.
+    BACKEND_NGINX_PROXY_PASS_DOMAIN: "serviceName.namespaceName.svc.cluster.local"
+    BACKEND_NGINX_PROXY_PASS_PORT: "8080"
+    BACKEND_NGINX_CERT_PATH: "/etc/ssl/certs/tls.crt"
+    BACKEND_NGINX_CERT_KEY_PATH: "/etc/ssl/certs/tls.key"
+    BACKEND_NGINX_DOMAIN_NAME: "rootlesnginx.apps.dev.openshift.com"
+
+  image:
+    repository: registry.access.redhat.com/ubi9/nginx-124
+    tag: "latest"
+    pullPolicy: Always
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+
+  volumes:
+    ## if using certs, save as a k8s secret with the name like below and uncomment the below lines 
+    # - name: nginx-certs
+    #   secret:
+    #     secretName: nginx-certs
+    #     defaultMode: 420
+    - name: nginx-conf
+      configMap:
+        name: nginx-conf
+
+  volumeMounts:
+    ## if using certs, uncomment the below lines.
+    ## if you need nginx to use it, update the nginx.conf template in templates/configmap.yaml
+    # - name: nginx-certs
+    #   mountPath: /etc/ssl/certs/tls.crt
+    #   subPath: tls.crt
+    # - name: nginx-certs
+    #   mountPath: /etc/ssl/certs/tls.key
+    #   subPath: tls.key
+    ## this is the default nginx.conf file that will be used to start nginx
+    - name: nginx-conf
+      mountPath: /etc/nginx/nginx.conf
+      subPath: nginx.conf
+    ## this is the template nginx file that will render the BACKEND_NGINX* variables and will be included in the nginx.conf above.
+    - name: nginx-conf
+      mountPath: /opt/app-root/etc/nginx.d/nginx-http.conf-template
+      subPath: nginx-http.conf-template
+
+service:
+  type: ClusterIP
+  ports:
+    - name: nginx-http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: nginx-https
+      protocol: TCP
+      port: 8443
+      targetPort: 8443
+  ## uncommment the below annotations line and add annotations to it if needed to pass to the service.
+  # annotations:
+
+ingress:
+  host: "nginx.apps.dev.openshift.com"
+  port: 8080

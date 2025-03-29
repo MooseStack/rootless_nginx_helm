@@ -1,0 +1,104 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "rootless-nginx.fullname" . }}-conf
+immutable: false
+data:
+  # mounts to /etc/nginx/nginx.conf
+  nginx.conf: |-
+    worker_processes  auto;
+
+    pid /var/tmp/nginx.pid;
+    include /opt/app-root/etc/nginx.d/*.conf;
+
+    events {
+        worker_connections  1024;
+    }
+
+  # mounts to /opt/app-root/etc/nginx.d/nginx-http.conf-template
+  # will replace environment vars with the envsubst command in the deployment.yaml
+  # new file will be created at /opt/app-root/etc/nginx.d/nginx-http.conf
+  nginx-http.conf-template: |-
+    http {
+        server_tokens off;
+        include /etc/nginx/mime.types;
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        client_body_temp_path /tmp/client_temp;
+        proxy_temp_path       /tmp/proxy_temp_path;
+        fastcgi_temp_path     /tmp/fastcgi_temp;
+        uwsgi_temp_path       /tmp/uwsgi_temp;
+        scgi_temp_path        /tmp/scgi_temp;
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        #### START OF 8080 LISTENING BLOCK. 
+          ## Reads index.html from /opt/app-root/src/nginx-start, 
+          ## if no data defined will read default html file - "/usr/share/nginx/html/index.html"
+        server {
+                listen 8080;
+                server_name localhost;
+                root   /opt/app-root/src/nginx-start;
+
+                location / {
+                      root html; ## this is the nginx default "/usr/share/nginx/html" - should be removed for prod.
+                      index index.html;
+                  }
+             }
+
+
+
+        #### START OF 8443 LISTENING BLOCK - redirects traffic to another endpoint
+        # server {
+        #         listen 8443 ssl http2;
+
+        #       #### certificate and key of server:
+        #         ssl_certificate $BACKEND_NGINX_CERT_PATH;
+        #         ssl_certificate_key $BACKEND_NGINX_CERT_KEY_PATH;
+        #         ssl_session_timeout 1d;
+        #         ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+        #         ssl_session_tickets off;
+
+        #       #### medium security configurations to accept below TLS protocols and Ciphers:
+        #         ssl_protocols TLSv1.2 TLSv1.3;
+        #         ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+        #         ssl_prefer_server_ciphers off;
+
+        #         # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+        #        add_header Strict-Transport-Security "max-age=63072000" always;
+
+        #       server_name $BACKEND_NGINX_DOMAIN_NAME;
+      
+        #       # Reroutes/proxies all traffic to another endpoint
+        #       location / {
+        #           proxy_pass http://$BACKEND_NGINX_PROXY_PASS_DOMAIN:$BACKEND_NGINX_PROXY_PASS_PORT;
+        #           proxy_set_header Host $host;
+        #           proxy_set_header X-Real-IP $remote_addr;
+        #           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        #           proxy_set_header X-Forwarded-Proto $scheme;
+        #       }
+
+        #       # Required due to security scans
+        #       if ( $host !~* ^($BACKEND_NGINX_DOMAIN_NAME)$ ) {
+        #         return 444;
+        #       }
+        #       if ( $http_host !~* ^($BACKEND_NGINX_DOMAIN_NAME)$ ) {
+        #         return 444;
+        #       }
+
+        #     #error_page  404              /404.html;
+
+        #     # redirect server error pages to the static page /50x.html
+        #     #
+        #     error_page   500 502 503 504  /50x.html;
+        #     location = /50x.html {
+        #         root   html;
+        #     }
+
+        # }
+        #### END OF 8443 LISTENING BLOCK
+
+      }

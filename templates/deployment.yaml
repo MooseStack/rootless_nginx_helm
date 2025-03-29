@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rootless-nginx.fullname" . }}
+  labels:
+    app: {{ include "rootless-nginx.fullname" . }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "rootless-nginx.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "rootless-nginx.fullname" . }}
+    spec:
+      {{- with .Values.deployment.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "rootless-nginx.fullname" . }}
+          image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag }}"
+          command: ["/bin/sh", "-c", "envsubst '${BACKEND_NGINX_CERT_PATH} ${BACKEND_NGINX_CERT_KEY_PATH} ${BACKEND_NGINX_PROXY_PASS_PORT} ${BACKEND_NGINX_PROXY_PASS_DOMAIN} ${BACKEND_NGINX_DOMAIN_NAME}' < /opt/app-root/etc/nginx.d/nginx-http.conf-template > /opt/app-root/etc/nginx.d/nginx-http.conf && nginx -g 'daemon off;'"]
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          env:
+            - name: "BACKEND_NGINX_PROXY_PASS_DOMAIN"
+              value: {{ .Values.deployment.env.BACKEND_NGINX_PROXY_PASS_DOMAIN }}
+            - name: "BACKEND_NGINX_PROXY_PASS_PORT"
+              value: "{{ .Values.deployment.env.BACKEND_NGINX_PROXY_PASS_PORT }}"
+            - name: "BACKEND_NGINX_CERT_PATH"
+              value: {{ .Values.deployment.env.BACKEND_NGINX_CERT_PATH }}
+            - name: "BACKEND_NGINX_CERT_KEY_PATH"
+              value: {{ .Values.deployment.env.BACKEND_NGINX_CERT_KEY_PATH }}
+            - name: "BACKEND_NGINX_DOMAIN_NAME"
+              value: {{ .Values.deployment.env.BACKEND_NGINX_DOMAIN_NAME }}
+          resources:
+            {{- toYaml .Values.deployment.resources | nindent 12 }}
+          {{- with .Values.deployment.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
