@@ -1,6 +1,6 @@
 ## Name that will be used for all resources. If updating it, make sure to update "volumes" and "volumeMounts" in this file below.
-nameOverride: nginx
-fullnameOverride: nginx
+nameOverride: nginx-2
+fullnameOverride: nginx-2
 
 deployment:
   replicaCount: 1
@@ -36,7 +36,7 @@ deployment:
     #     defaultMode: 420
     - name: nginx-conf
       configMap:
-        name: nginx-conf
+        name: nginx-2-conf
 
   volumeMounts:
     ## if using certs, uncomment the below lines.

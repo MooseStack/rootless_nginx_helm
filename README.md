@@ -11,6 +11,12 @@
 - Example environment variable passed to container: `BACKEND_NGINX_*`
 - When container starts, it will run `envsubst` command against the nginx template, and it'll generate a new nginx file that will be used in the final start of nginx.
 
+## Deploy:
+
+1. `git clone https://github.com/MooseStack/rootless_nginx_helm.git && cd rootless_nginx_helm`
+
+2. `helm install rootless_nginx . --namespace rootless_nginx --create-namespace`
+
 ## Helm structure
 ```
 ├── Chart.yaml - helm chart

@@ -7,7 +7,7 @@ spec:
     - host: {{ .Values.ingress.host }}
       http:
         paths:
-          - path: /
+          - path: /test2
             pathType: Prefix
             backend:
               service:
