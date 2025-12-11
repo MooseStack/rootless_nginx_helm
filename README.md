@@ -15,7 +15,7 @@
 
 1. `git clone https://github.com/MooseStack/rootless_nginx_helm.git && cd rootless_nginx_helm`
 
-2. `helm install rootless_nginx . --namespace rootless_nginx --create-namespace`
+2. `helm install rootless-nginx . --namespace rootless-nginx --create-namespace`
 
 ## Helm structure
 ```
@@ -31,7 +31,6 @@
 
 
 ## Benefits
-- No Dockerfile/Containerfile needed.
 - Structured to be a template with many values-x.yaml files for environment separation.
 - Designed with UBI (Red Hat Enterprise Linux 9) in mind.
 - Runs on a rootless environment, such as OpenShift.
